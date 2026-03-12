@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.29)
 cmake_policy(SET CMP0155 OLD) 
 
 # This template attempts to be "fetch_content"-able
-# so that it works well with tools like CPM or other
-# manual dependency management
+# so that it works well with dependency managers like
+# Conan or manual dependency management
 
 # Only set the cxx_standard if it is not set by someone else
 if (NOT DEFINED CMAKE_CXX_STANDARD)
@@ -16,6 +16,9 @@ endif()
 # -Wpedantic being enabled and -std=c++20 and -std=gnu++20 for example
 # when compiling with PCH enabled
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Conan 2.0 - must be initialized before the project() call
+include(cmake/Conan.cmake)
 
 # Set the project name and language
 project(
