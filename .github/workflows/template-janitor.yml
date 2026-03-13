@@ -42,7 +42,7 @@ jobs:
         with:
           compiler: ${{ matrix.compiler }}
           build_type: ${{ matrix.build_type }}
-          package_maintainer_mode: ${{ matrix.package_maintainer_mode }}
+          packaging_maintainer_mode: ${{ matrix.packaging_maintainer_mode }}
           generator: ${{ matrix.generator }}
 
       - name: Get organization and project name
