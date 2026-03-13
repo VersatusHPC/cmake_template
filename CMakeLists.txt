@@ -35,6 +35,12 @@ include(ProjectOptions.cmake)
 
 myproject_setup_options()
 
+if(myproject_WARNINGS_AS_ERRORS)
+  set(myproject_WARNING_TYPE SEND_ERROR)
+else()
+  set(myproject_WARNING_TYPE WARNING)
+endif()
+
 myproject_global_options()
 include(Dependencies.cmake)
 myproject_setup_dependencies()
@@ -66,6 +72,12 @@ add_subdirectory(configured_files)
 
 # Adding the src:
 add_subdirectory(src)
+
+# Bloaty needs targets to exist, so it runs after add_subdirectory(src)
+if(myproject_ENABLE_BLOATY)
+  include(cmake/Bloaty.cmake)
+  myproject_setup_bloaty(intro)
+endif()
 
 # Create unified web deployment directory (for WASM builds)
 if(EMSCRIPTEN)
