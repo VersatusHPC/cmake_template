@@ -6,8 +6,8 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) e
 
 - Format: `type(scope?): subject` with allowed types `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
 - Subject: imperative mood, no trailing punctuation, max 72 characters.
-- Body: optional for simple changes; add context for the change when needed.
-- Sign-offs: include `Signed-off-by: Full Name <email>` in the body when a body is present; sign commits when possible via `git commit -S -s`.
+- Body: required; add context for the change.
+- Sign-offs: every commit must include `Signed-off-by: Full Name <email>` in the body (`git commit -s`); sign commits cryptographically when possible (`git commit -S -s`).
 
 Example:
 
