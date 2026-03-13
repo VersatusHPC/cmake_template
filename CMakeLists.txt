@@ -79,6 +79,12 @@ if(myproject_ENABLE_BLOATY)
   myproject_setup_bloaty(intro)
 endif()
 
+# Build documentation
+if(PROJECT_IS_TOP_LEVEL AND myproject_ENABLE_DOCS)
+  include(cmake/Doxygen.cmake)
+  myproject_enable_doxygen()
+endif()
+
 # Create unified web deployment directory (for WASM builds)
 if(EMSCRIPTEN)
   myproject_create_web_dist()

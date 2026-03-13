@@ -61,6 +61,7 @@ endmacro()
 macro(myproject_setup_options)
   option(myproject_ENABLE_HARDENING "Enable hardening" ON)
   option(myproject_ENABLE_COVERAGE "Enable coverage reporting" OFF)
+  option(myproject_ENABLE_DOCS "Enable Doxygen documentation" OFF)
   cmake_dependent_option(
     myproject_ENABLE_GLOBAL_HARDENING
     "Attempt to push hardening options to built dependencies"
@@ -117,6 +118,7 @@ macro(myproject_setup_options)
       myproject_ENABLE_LIZARD
       myproject_ENABLE_BLOATY
       myproject_ENABLE_COVERAGE
+      myproject_ENABLE_DOCS
       myproject_ENABLE_PCH
       myproject_ENABLE_CACHE)
   endif()
