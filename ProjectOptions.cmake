@@ -82,6 +82,7 @@ macro(myproject_setup_options)
     option(myproject_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
     option(myproject_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
     option(myproject_ENABLE_CPPCHECK "Enable cpp-check analysis" OFF)
+    option(myproject_ENABLE_INCLUDE_WHAT_YOU_USE "Enable include-what-you-use" OFF)
     option(myproject_ENABLE_LIZARD "Enable Lizard complexity analysis" OFF)
     option(myproject_ENABLE_BLOATY "Enable Bloaty McBloatface binary size analysis" OFF)
     option(myproject_ENABLE_PCH "Enable precompiled headers" OFF)
@@ -97,6 +98,7 @@ macro(myproject_setup_options)
     option(myproject_ENABLE_UNITY_BUILD "Enable unity builds" OFF)
     option(myproject_ENABLE_CLANG_TIDY "Enable clang-tidy" ON)
     option(myproject_ENABLE_CPPCHECK "Enable cpp-check analysis" ON)
+    option(myproject_ENABLE_INCLUDE_WHAT_YOU_USE "Enable include-what-you-use" OFF)
     option(myproject_ENABLE_LIZARD "Enable Lizard complexity analysis" ON)
     option(myproject_ENABLE_BLOATY "Enable Bloaty McBloatface binary size analysis" OFF)
     option(myproject_ENABLE_PCH "Enable precompiled headers" OFF)
@@ -115,6 +117,7 @@ macro(myproject_setup_options)
       myproject_ENABLE_UNITY_BUILD
       myproject_ENABLE_CLANG_TIDY
       myproject_ENABLE_CPPCHECK
+      myproject_ENABLE_INCLUDE_WHAT_YOU_USE
       myproject_ENABLE_LIZARD
       myproject_ENABLE_BLOATY
       myproject_ENABLE_COVERAGE
@@ -213,6 +216,10 @@ macro(myproject_local_options)
   if(myproject_ENABLE_CPPCHECK)
     myproject_enable_cppcheck(${myproject_WARNINGS_AS_ERRORS} "" # override cppcheck options
     )
+  endif()
+
+  if(myproject_ENABLE_INCLUDE_WHAT_YOU_USE)
+    myproject_enable_include_what_you_use()
   endif()
 
   if(myproject_ENABLE_LIZARD)
