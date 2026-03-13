@@ -6,8 +6,8 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) e
 
 - Format: `type(scope?): subject` with allowed types `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
 - Subject: imperative mood, no trailing punctuation, max 72 characters.
-- Body: wrap lines at 80 characters; add context for the change when needed.
-- Sign-offs: include `Signed-off-by: Full Name <email>` in the body; sign commits when possible via `git commit -S -s`.
+- Body: optional for simple changes; add context for the change when needed.
+- Sign-offs: include `Signed-off-by: Full Name <email>` in the body when a body is present; sign commits when possible via `git commit -S -s`.
 
 Example:
 
@@ -19,16 +19,17 @@ Implement automatic rotation of TLS client certificates before expiry.
 Signed-off-by: Jane Doe <jane@example.com>
 ```
 
-## Setting up the commit-msg hook
+## Setting up pre-commit hooks
 
-The repository includes a `.githooks/commit-msg` hook that validates messages automatically. Enable it by pointing Git to the hooks directory:
+This repository uses [pre-commit](https://pre-commit.com/) to run formatting and linting checks automatically on each commit. Install and activate it:
 
 ```sh
-git config core.hooksPath .githooks
+pipx install pre-commit
+pre-commit install
 ```
 
-This requires gitlint to be installed:
+If you previously used the `.githooks/` directory, unset the custom hooks path:
 
 ```sh
-pipx install gitlint
+git config --unset core.hooksPath
 ```

@@ -6,7 +6,7 @@ regex-style-search = true
 # Body line length is not enforced — git stores messages as-is and every
 # modern tool wraps. Title length (72) matters for git log --oneline;
 # body length does not.
-ignore = body-max-line-length
+ignore = body-max-line-length,body-is-missing
 
 # -----------------------------------------------------------
 # Conventional Commits title
