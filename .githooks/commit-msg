@@ -1,0 +1,10 @@
+#!/bin/sh
+# Validate commit messages against Conventional Commits via gitlint.
+# See .gitlint for the ruleset.
+
+if command -v gitlint >/dev/null 2>&1; then
+  gitlint --msg-filename "$1"
+else
+  echo "Warning: gitlint not found, skipping commit message validation."
+  echo "Install with: pipx install gitlint"
+fi
