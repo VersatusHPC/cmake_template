@@ -12,8 +12,9 @@ RUN dnf install -y \
         python3 python3-pip wget zip unzip rsync \
         openssh-clients file
 
-# ── GCC 14 (system compiler) ─────────────────────────────────────────
-RUN dnf install -y gcc gcc-c++ gdb
+# ── GCC 14 (system) + GCC 15 (toolset) ───────────────────────────────
+RUN dnf install -y gcc gcc-c++ gdb \
+        gcc-toolset-15-gcc gcc-toolset-15-gcc-c++ gcc-toolset-15-binutils
 
 # ── LLVM / Clang ─────────────────────────────────────────────────────
 RUN dnf install -y \

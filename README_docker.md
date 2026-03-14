@@ -10,12 +10,24 @@ docker run -it my_project:latest
 
 This command will put you in a `bash` session in a Red Hat UBI 10 Docker container,
 with all of the tools listed in the [Dependencies](README_dependencies.md#dependencies) section already installed.
-You will have GCC 14 and Clang 19 available, along with CMake, Ninja, Conan 2.0,
-clang-tidy, cppcheck, include-what-you-use, ccache, doxygen, and graphviz.
+You will have GCC 14 (system default), GCC 15 (via gcc-toolset-15), and Clang 19
+available, along with CMake, Ninja, Conan 2.0, clang-tidy, cppcheck,
+include-what-you-use, ccache, doxygen, and graphviz.
 
-The CC and CXX environment variables are set to GCC by default.
-If you wish to use clang as your default CC and CXX environment variables, you
-may do so like this:
+The CC and CXX environment variables are set to GCC 14 by default.
+To use GCC 15 instead, activate the toolset:
+
+```bash
+source /opt/rh/gcc-toolset-15/enable
+```
+
+Or set the compiler explicitly:
+
+```bash
+CC=/opt/rh/gcc-toolset-15/root/usr/bin/gcc CXX=/opt/rh/gcc-toolset-15/root/usr/bin/g++ cmake -S . -B ./build
+```
+
+If you wish to use clang as your default compiler, build the container with:
 
 ```bash
 docker build --tag=my_project:latest --build-arg USE_CLANG=1 -f ./.devcontainer/Dockerfile .
