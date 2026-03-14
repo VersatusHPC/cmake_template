@@ -12,6 +12,7 @@ class MyProjectConan(ConanFile):
         self.requires("fmt/[>=11.0 <13.0]")
         self.requires("spdlog/[>=1.14.0 <2.0]")
         self.requires("catch2/[>=3.7.0 <4.0]")
+        self.requires("trompeloeil/[>=49 <50]")
         self.requires("cli11/[>=2.4.0 <3.0]")
         self.requires("ftxui/[>=5.0 <7.0]")
 

@@ -68,6 +68,31 @@ catch_discover_tests(
   OUTPUT_SUFFIX
   .xml)
 
+# ── Mock tests (trompeloeil + Catch2) ─────────────────────────────────
+
+add_executable(mock_tests mock_tests.cpp)
+target_link_libraries(
+  mock_tests
+  PRIVATE myproject::myproject_warnings
+          myproject::myproject_options
+          Catch2::Catch2WithMain
+          trompeloeil::trompeloeil)
+
+myproject_configure_linker(mock_tests)
+
+catch_discover_tests(
+  mock_tests
+  TEST_PREFIX
+  "mock."
+  REPORTER
+  XML
+  OUTPUT_DIR
+  .
+  OUTPUT_PREFIX
+  "mock."
+  OUTPUT_SUFFIX
+  .xml)
+
 # Add a file containing a set of constexpr tests
 add_executable(constexpr_tests constexpr_tests.cpp)
 target_link_libraries(
