@@ -9,7 +9,7 @@ class MyProjectConan(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("fmt/[>=11.0 <12.0]")
+        self.requires("fmt/[>=11.0 <13.0]")
         self.requires("spdlog/[>=1.14.0 <2.0]")
         self.requires("catch2/[>=3.7.0 <4.0]")
         self.requires("cli11/[>=2.4.0 <3.0]")
