@@ -1,10 +1,10 @@
-# Red Hat Universal Base Image 9
-FROM registry.access.redhat.com/ubi9/ubi
+# Red Hat Universal Base Image 10
+FROM registry.access.redhat.com/ubi10/ubi
 
 # ── Enable required repositories ──────────────────────────────────────
 RUN dnf install -y 'dnf-command(config-manager)' && \
-    dnf config-manager --enable ubi-9-codeready-builder-rpms && \
-    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    dnf config-manager --enable ubi-10-codeready-builder-rpms && \
+    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
 
 # ── Core build tools ──────────────────────────────────────────────────
 RUN dnf install -y \
@@ -12,12 +12,8 @@ RUN dnf install -y \
         python3 python3-pip wget zip unzip rsync \
         openssh-clients file
 
-# ── GCC Toolset 14 ───────────────────────────────────────────────────
-RUN dnf install -y \
-        gcc-toolset-14-gcc gcc-toolset-14-gcc-c++ gcc-toolset-14-binutils gdb
-
-# Activate GCC 14 by default
-ENV PATH="/opt/rh/gcc-toolset-14/root/usr/bin:${PATH}"
+# ── GCC 14 (system compiler) ─────────────────────────────────────────
+RUN dnf install -y gcc gcc-c++ gdb
 
 # ── LLVM / Clang ─────────────────────────────────────────────────────
 RUN dnf install -y \
