@@ -40,11 +40,7 @@ It includes
 
  * [Devcontainer](https://containers.dev/) based on Red Hat UBI 10 with GCC 14, Clang 19, and all tools pre-installed
 
-**Live Demo:** If you enable GitHub Pages in your project created from this template, you'll have a working example like this:
-- Main: [https://cpp-best-practices.github.io/cmake_template/](https://cpp-best-practices.github.io/cmake_template/)
-- Develop: [https://cpp-best-practices.github.io/cmake_template/develop/](https://cpp-best-practices.github.io/cmake_template/develop/)
-
-The `main` branch deploys to the root, `develop` to `/develop/`, and tags to `/tagname/`.
+This template is based on [cpp-best-practices/cmake_template](https://github.com/cpp-best-practices/cmake_template) by Jason Turner (lefticus). If you enable GitHub Pages on a repository created from this template, the `main` branch deploys to the root, `develop` to `/develop/`, and tags to `/tagname/`.
 
 It requires
 
@@ -84,7 +80,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message policy and developer w
 
  * [Dependency Setup](README_dependencies.md)
  * [Building Details](README_building.md)
- * [Docker](README_docker.md)
+ * [Containers](README_container.md)
 
 ## Testing
 

@@ -4,7 +4,7 @@ project(CmakeConfigPackageTests
   VERSION ${PROJECT_VERSION}
   LANGUAGES CXX)
 
-# ── Test as standalone project the exported config package ────────────
+# Test as standalone project the exported config package
 
 if(PROJECT_IS_TOP_LEVEL OR TEST_INSTALLED_VERSION)
   enable_testing()
@@ -17,7 +17,7 @@ if(PROJECT_IS_TOP_LEVEL OR TEST_INSTALLED_VERSION)
   endif()
 endif()
 
-# ── Dependencies ──────────────────────────────────────────────────────
+# Dependencies
 
 # Catch2 test discovery module (Catch.cmake) is added to CMAKE_MODULE_PATH
 # by myproject_setup_dependencies() in Dependencies.cmake.
@@ -68,7 +68,7 @@ catch_discover_tests(
   OUTPUT_SUFFIX
   .xml)
 
-# ── Mock tests (trompeloeil + Catch2) ─────────────────────────────────
+# Mock tests (trompeloeil + Catch2)
 
 add_executable(mock_tests mock_tests.cpp)
 target_link_libraries(
