@@ -1,6 +1,7 @@
 # Project-specific ignores
 /build*/
 /cmake-*/
+.cache/
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,c++,visualstudiocode,vim,linux,macos,pvs,git,cmake,ninja,executable,clion+all,sonar
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,c++,visualstudiocode,vim,linux,macos,pvs,git,cmake,ninja,executable,clion+all,sonar

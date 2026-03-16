@@ -1,14 +1,14 @@
 # cmake_template
 
-[![ci](https://github.com/cpp-best-practices/cmake_template/actions/workflows/ci.yml/badge.svg)](https://github.com/cpp-best-practices/cmake_template/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/cpp-best-practices/cmake_template/branch/main/graph/badge.svg)](https://codecov.io/gh/cpp-best-practices/cmake_template)
-[![CodeQL](https://github.com/cpp-best-practices/cmake_template/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/cpp-best-practices/cmake_template/actions/workflows/codeql-analysis.yml)
+[![ci](https://github.com/VersatusHPC/cmake_template/actions/workflows/ci.yml/badge.svg)](https://github.com/VersatusHPC/cmake_template/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/VersatusHPC/cmake_template/branch/master/graph/badge.svg)](https://codecov.io/gh/VersatusHPC/cmake_template)
+[![CodeQL](https://github.com/VersatusHPC/cmake_template/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/VersatusHPC/cmake_template/actions/workflows/codeql-analysis.yml)
 
 ## About cmake_template
 
 This is a C++ Best Practices GitHub template for getting up and running with C++ quickly.
 
-By default (collectively known as `ENABLE_DEVELOPER_MODE`)
+By default, developer mode enables
 
  * Address Sanitizer and Undefined Behavior Sanitizer enabled where possible
  * Warnings as errors
