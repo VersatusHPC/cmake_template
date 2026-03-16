@@ -172,8 +172,8 @@ jobs:
           gcovr: true
           opencppcoverage: true
 
-      - name: Install Conan
-        run: pip install conan
+      - name: Install Conan and Lizard
+        run: pip install conan lizard
 
       - name: Configure CMake
         run: |
