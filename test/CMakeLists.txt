@@ -13,7 +13,7 @@ if(PROJECT_IS_TOP_LEVEL OR TEST_INSTALLED_VERSION)
 
   if(NOT TARGET myproject_options)
     message(FATAL_ERROR "Required config package not found!")
-    return() # be strictly paranoid for Template Janitor github action! CK
+    return() # be strictly paranoid for Template Janitor github action!
   endif()
 endif()
 

@@ -45,7 +45,7 @@ This template is based on [cpp-best-practices/cmake_template](https://github.com
 It requires
 
  * cmake
- * a C++17 compiler
+ * a C++23 compiler
  * Conan 2.0
 
 This project gets you started with a simple example of using FTXUI, which happens to also be a game.
@@ -54,7 +54,7 @@ This project gets you started with a simple example of using FTXUI, which happen
 
 ### Use the GitHub template
 First, click the green `Use this template` button near the top of this page.
-This will take you to GitHub's ['Generate Repository'](https://github.com/cpp-best-practices/cmake_template/generate)
+This will take you to GitHub's ['Generate Repository'](https://github.com/VersatusHPC/cmake_template/generate)
 page.
 Fill in a repository name and short description, and click 'Create repository from template'.
 This will allow you to create a new repository in your GitHub account,
