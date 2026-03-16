@@ -34,7 +34,7 @@ See [cppreference.com](https://en.cppreference.com/w/cpp/compiler_support)
 to see which features are supported by each compiler.
 The following compilers should work:
 
-  * [gcc 7+](https://gcc.gnu.org/)
+  * [gcc 14+](https://gcc.gnu.org/)
 	<details>
 	<summary>Install command</summary>
 
@@ -51,7 +51,7 @@ The following compilers should work:
 			brew install gcc
 	</details>
 
-  * [clang 6+](https://clang.llvm.org/)
+  * [clang 17+](https://clang.llvm.org/)
 	<details>
 	<summary>Install command</summary>
 
@@ -61,14 +61,14 @@ The following compilers should work:
 
 	- Windows:
 
-		Visual Studio 2019 ships with LLVM (see the Visual Studio section). However, to install LLVM separately:
+		Visual Studio 2022 ships with LLVM (see the Visual Studio section). However, to install LLVM separately:
 
 			choco install llvm -y
 
 		llvm-utils for using external LLVM with Visual Studio generator:
 
 			git clone https://github.com/zufuliu/llvm-utils.git
-			cd llvm-utils/VS2017
+			cd llvm-utils/VS2022
 			.\install.bat
 
 	- MacOS:
