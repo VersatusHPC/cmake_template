@@ -38,6 +38,7 @@ jobs:
           # you can specify the version after `-` like "llvm-15.0.2".
           - llvm-19.1.1
           - gcc-14
+          - intel
         generator:
           - "Ninja Multi-Config"
         build_type:
@@ -54,6 +55,12 @@ jobs:
           - os: windows-latest
             compiler: gcc-14
 
+          # Intel oneAPI is only available on Linux
+          - os: windows-latest
+            compiler: intel
+          - os: macos-latest
+            compiler: intel
+
         include:
           # Add appropriate variables for gcov version required. This will intentionally break
           # if you try to use a compiler that does not have gcov set
@@ -64,6 +71,10 @@ jobs:
           - compiler: llvm-19.1.1
             enable_ipo: Off
             gcov_executable: "llvm-cov gcov"
+
+          - compiler: intel
+            enable_ipo: Off
+            gcov_executable: gcov
 
           - os: macos-latest
             enable_ipo: Off
