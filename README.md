@@ -44,7 +44,7 @@ It includes
 
 This template is heavily based on [cpp-best-practices/cmake_template](https://github.com/cpp-best-practices/cmake_template) by [Jason Turner](https://github.com/lefticus) and the [C++ Best Practices](https://github.com/cpp-best-practices) community. Their work on CMake infrastructure, CI workflows, and developer tooling laid the foundation for this project.
 
-If you enable GitHub Pages on a repository created from this template, the `main` branch deploys to the root, `develop` to `/develop/`, and tags to `/tagname/`.
+If you enable GitHub Pages on a repository created from this template, the default branch (`main` or `master`) deploys to the root, `develop` to `/develop/`, and tags to `/tagname/`.
 
 It requires
 
