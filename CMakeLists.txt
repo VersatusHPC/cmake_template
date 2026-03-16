@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.21)
 
-# Disable modules support, this is broken with clang-tidy at the moment
-cmake_policy(SET CMP0155 OLD)
+# Disable C++20 modules scanning, broken with clang-tidy and IWYU
+if(POLICY CMP0155)
+  cmake_policy(SET CMP0155 OLD)
+endif()
 
 # This template attempts to be "fetch_content"-able
 # so that it works well with dependency managers like
