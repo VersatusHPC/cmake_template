@@ -93,7 +93,7 @@ With Cmake directly:
 
 Cmake will automatically create the `./build` folder if it does not exist, and it wil configure the project.
 
-Instead, if you have CMake version 3.29+, you can use one of the configuration presets that are listed in the CMakePresets.json file.
+Instead, if you have CMake version 3.21+, you can use one of the configuration presets that are listed in the CMakePresets.json file.
 
     cmake . --preset <configure-preset>
     cmake --build
