@@ -192,20 +192,33 @@ jobs:
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
-      - name: Configure Intel Conan profile
+      - name: Patch Conan settings for Intel ICX
         if: ${{ matrix.compiler == 'intel' }}
         run: |
-          # The cmake-conan provider auto-detects the compiler from CC/CXX.
-          # It doesn't recognize IntelLLVM, so we temporarily set CC/CXX to
-          # clang/clang++ (which ICX is binary-compatible with) for profile
-          # detection, then restore them for the actual build.
+          # Conan's settings.yml doesn't include intel-cc 2025.x. Add it.
           ICX=/opt/intel/oneapi/compiler/latest/bin/icx
-          ICX_CLANG_VER=$($ICX -dM -E -x c /dev/null 2>/dev/null | grep __clang_major__ | awk '{print $3}')
-          echo "Detected ICX underlying Clang version: $ICX_CLANG_VER"
-          # Detect profile as if using system clang
-          CC=clang CXX=clang++ conan profile detect --force
-          # Override to the actual Clang version ICX is based on
-          sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
+          ICX_VER=$($ICX --version | head -1 | sed -n 's/.*Compiler \([0-9]*\)\..*/\1/p')
+          echo "Detected ICX major version: $ICX_VER"
+          SETTINGS_YML="$HOME/.conan2/settings.yml"
+          conan profile detect --force
+          conan config home
+          # Add ICX version to intel-cc compiler in settings.yml
+          python3 -c "
+          import re
+          with open('$SETTINGS_YML', 'r') as f:
+              content = f.read()
+          # Find the intel-cc versions list and add our version
+          pattern = r'(intel-cc:.*?version: \[)(.*?)(\])'
+          def add_version(m):
+              versions = m.group(2)
+              if '\"$ICX_VER\"' not in versions:
+                  versions = versions.rstrip() + ', \"$ICX_VER\"'
+              return m.group(1) + versions + m.group(3)
+          content = re.sub(pattern, add_version, content, flags=re.DOTALL)
+          with open('$SETTINGS_YML', 'w') as f:
+              f.write(content)
+          "
+          echo "Conan profile:"
           cat ~/.conan2/profiles/default
 
       - name: Configure CMake
