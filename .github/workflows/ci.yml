@@ -192,38 +192,36 @@ jobs:
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
-      - name: Patch Conan settings for Intel ICX
+      - name: Configure Conan for Intel ICX
         if: ${{ matrix.compiler == 'intel' }}
         run: |
-          # Conan's settings.yml doesn't include intel-cc 2025.x. Add it.
+          # The cmake-conan provider maps CMAKE_CXX_COMPILER_ID to Conan
+          # compiler names. It passes "IntelLLVM" which Conan doesn't know.
+          # Pre-install deps with a clang profile (binary compatible) and
+          # skip the auto-provider during cmake configure.
           ICX=/opt/intel/oneapi/compiler/latest/bin/icx
-          ICX_VER=$($ICX --version | head -1 | sed -n 's/.*Compiler \([0-9]*\)\..*/\1/p')
-          echo "Detected ICX major version: $ICX_VER"
-          SETTINGS_YML="$HOME/.conan2/settings.yml"
-          conan profile detect --force
-          conan config home
-          # Add ICX version to intel-cc compiler in settings.yml
-          python3 -c "
-          import re
-          with open('$SETTINGS_YML', 'r') as f:
-              content = f.read()
-          # Find the intel-cc versions list and add our version
-          pattern = r'(intel-cc:.*?version: \[)(.*?)(\])'
-          def add_version(m):
-              versions = m.group(2)
-              if '\"$ICX_VER\"' not in versions:
-                  versions = versions.rstrip() + ', \"$ICX_VER\"'
-              return m.group(1) + versions + m.group(3)
-          content = re.sub(pattern, add_version, content, flags=re.DOTALL)
-          with open('$SETTINGS_YML', 'w') as f:
-              f.write(content)
-          "
-          echo "Conan profile:"
+          ICX_CLANG_VER=$($ICX -dM -E -x c /dev/null 2>/dev/null | grep __clang_major__ | awk '{print $3}')
+          echo "ICX underlying Clang version: $ICX_CLANG_VER"
+          # Create profile as clang (ICX is Clang-based, binary compatible)
+          CC=clang CXX=clang++ conan profile detect --force
+          sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
+          sed -i "s/compiler.cppstd=.*/compiler.cppstd=23/" ~/.conan2/profiles/default
           cat ~/.conan2/profiles/default
+          # Pre-install all dependencies
+          conan install . --build=missing -s build_type=Debug
+          conan install . --build=missing -s build_type=Release
+          conan install . --build=missing -s build_type=RelWithDebInfo
 
       - name: Configure CMake
         run: |
-          cmake -S . -B ./build -G "${{matrix.generator}}" -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{matrix.enable_ipo }} -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF -DGIT_SHA:STRING=${{ github.sha }}
+          EXTRA_CMAKE_ARGS=""
+          # For Intel, deps are pre-installed with conan install; skip the
+          # auto-provider (which doesn't support IntelLLVM) and point CMake
+          # to the Conan generators directory
+          if [[ "${{ matrix.compiler }}" == "intel" ]]; then
+            EXTRA_CMAKE_ARGS="-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES= -DCMAKE_PREFIX_PATH=$PWD/build/generators"
+          fi
+          cmake -S . -B ./build -G "${{matrix.generator}}" $EXTRA_CMAKE_ARGS -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{matrix.enable_ipo }} -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF -DGIT_SHA:STRING=${{ github.sha }}
 
       - name: Build
         # Execute the build.  You can specify a specific target with "--target <NAME>"
