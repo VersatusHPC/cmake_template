@@ -181,7 +181,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp cmake ninja-build ccache cppcheck gcovr
           # Source the environment so icx/icpx are available in this step
-          source /opt/intel/oneapi/setvars.sh
+          # setvars.sh may return non-zero on some configurations
+          source /opt/intel/oneapi/setvars.sh || true
           echo "CC=icx" >> $GITHUB_ENV
           echo "CXX=icpx" >> $GITHUB_ENV
           echo "/opt/intel/oneapi/compiler/latest/bin" >> $GITHUB_PATH
