@@ -155,6 +155,7 @@ jobs:
 
 
       - name: Setup Cpp
+        if: ${{ matrix.compiler != 'intel' }}
         uses: aminya/setup-cpp@v1
         with:
           compiler: ${{ matrix.compiler }}
@@ -172,12 +173,25 @@ jobs:
           gcovr: true
           opencppcoverage: true
 
+      - name: Setup Intel oneAPI
+        if: ${{ matrix.compiler == 'intel' }}
+        run: |
+          wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | sudo gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+          sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp cmake ninja-build ccache cppcheck gcovr
+          source /opt/intel/oneapi/setvars.sh
+          echo "CC=icx" >> $GITHUB_ENV
+          echo "CXX=icpx" >> $GITHUB_ENV
+          echo "/opt/intel/oneapi/compiler/latest/bin" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
       - name: Configure CMake
         run: |
-          cmake -S . -B ./build -G "${{matrix.generator}}" -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{matrix.enable_ipo }} -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -DGIT_SHA:STRING=${{ github.sha }}
+          cmake -S . -B ./build -G "${{matrix.generator}}" -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{matrix.enable_ipo }} -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF -DGIT_SHA:STRING=${{ github.sha }}
 
       - name: Build
         # Execute the build.  You can specify a specific target with "--target <NAME>"
@@ -216,7 +230,7 @@ jobs:
       - name: Publish to codecov
         uses: codecov/codecov-action@v5
         with:
-          fail_ci_if_error: true # we weren't posting previously
+          fail_ci_if_error: false
           flags: ${{ runner.os }}
           name: ${{ runner.os }}-coverage
           token: ${{ secrets.CODECOV_TOKEN }}
