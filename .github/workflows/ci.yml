@@ -173,26 +173,32 @@ jobs:
           gcovr: true
           opencppcoverage: true
 
-      - name: Setup Intel oneAPI
+      - name: Install Intel oneAPI
         if: ${{ matrix.compiler == 'intel' }}
         run: |
           wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | sudo gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
           sudo apt-get update
           sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp cmake ninja-build ccache cppcheck gcovr
-          # Source the environment so icx/icpx are available in this step
-          # setvars.sh may return non-zero on some configurations
-          source /opt/intel/oneapi/setvars.sh || true
-          echo "CC=icx" >> $GITHUB_ENV
-          echo "CXX=icpx" >> $GITHUB_ENV
+
+      - name: Configure Intel oneAPI environment
+        if: ${{ matrix.compiler == 'intel' }}
+        run: |
           echo "/opt/intel/oneapi/compiler/latest/bin" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "CC=icx" >> $GITHUB_ENV
+          echo "CXX=icpx" >> $GITHUB_ENV
+
+      - name: Configure Intel Conan profile
+        if: ${{ matrix.compiler == 'intel' }}
+        run: |
           # Conan doesn't recognize IntelLLVM natively; create a default
           # profile that treats ICX as Clang (which it is under the hood)
-          ICX_CLANG_VER=$(icx --version | grep -oP 'clang version \K\d+')
+          ICX_CLANG_VER=$(icx --version | head -1 | sed -n 's/.*clang version \([0-9]*\).*/\1/p')
           conan profile detect --force
           sed -i "s/compiler=intel-cc/compiler=clang/" ~/.conan2/profiles/default
           sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
+          cat ~/.conan2/profiles/default
 
       - name: Install Conan and Lizard
         run: pip install conan lizard
