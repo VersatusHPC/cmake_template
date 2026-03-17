@@ -61,11 +61,6 @@ jobs:
           - os: macos-latest
             compiler: intel
 
-          # GCC on macOS has ABI incompatibilities with Conan packages
-          # (libstdc++ vs libc++ mismatch). Use the devcontainer for
-          # GCC builds; macOS CI validates Clang only.
-          - os: macos-latest
-            compiler: gcc-14
 
         include:
           # Add appropriate variables for gcov version required. This will intentionally break
@@ -198,6 +193,22 @@ jobs:
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
+      - name: Fix Conan profile for macOS GCC
+        if: ${{ runner.os == 'macOS' && contains(matrix.compiler, 'gcc') }}
+        run: |
+          # GCC on macOS uses libstdc++, but Conan's default macOS profile
+          # detects Apple Clang and sets libc++. Override to libstdc++11 so
+          # Conan builds packages with the correct ABI for GCC.
+          conan profile detect --force
+          sed -i.bak "s/compiler=apple-clang/compiler=gcc/" ~/.conan2/profiles/default
+          GCC_VER=$(echo "${{ matrix.compiler }}" | grep -o '[0-9]*')
+          sed -i.bak "s/compiler.version=.*/compiler.version=$GCC_VER/" ~/.conan2/profiles/default
+          sed -i.bak "s/compiler.libcxx=.*/compiler.libcxx=libstdc++11/" ~/.conan2/profiles/default
+          # Remove Apple Clang specific settings
+          sed -i.bak "/compiler.cppstd/d" ~/.conan2/profiles/default
+          echo "compiler.cppstd=23" >> ~/.conan2/profiles/default
+          cat ~/.conan2/profiles/default
+
       - name: Configure Conan for Intel ICX
         if: ${{ matrix.compiler == 'intel' }}
         run: |
@@ -270,7 +281,7 @@ jobs:
       - name: Publish to codecov
         uses: codecov/codecov-action@v5
         with:
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           flags: ${{ runner.os }}
           name: ${{ runner.os }}-coverage
           token: ${{ secrets.CODECOV_TOKEN }}
