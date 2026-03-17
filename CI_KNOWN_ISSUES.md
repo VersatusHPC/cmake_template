@@ -6,31 +6,16 @@ CPM/FetchContent to Conan 2.0. The upstream template
 does not have these issues because it uses FetchContent, which builds all
 dependencies from source within the build tree.
 
-## clang-tidy disabled in CI
+## clang-tidy and Conan include paths (RESOLVED)
 
-**Status:** Disabled via `-Dmyproject_ENABLE_CLANG_TIDY=OFF` in CI.
+**Status:** Fixed by removing the `-p` flag from `StaticAnalyzers.cmake`.
 
-**Root cause:** `CMAKE_CXX_CLANG_TIDY` integration can't resolve Conan
-`-isystem` include paths. clang-tidy's internal Clang parser fails with
-`'fmt/base.h' file not found` regardless of the build compiler (GCC, Clang,
-Intel). With FetchContent, headers live in the build tree and are resolvable.
-
-**Workaround in place:** clang-tidy is disabled in CI. It still runs locally
-and in the devcontainer where include paths are properly resolved.
-
-**Proper fix:** Run clang-tidy as a **separate CI step** after the build,
-using `compile_commands.json` and `run-clang-tidy` instead of
-`CMAKE_CXX_CLANG_TIDY`. This approach uses the compilation database where
-all include paths are fully resolved. Example:
-
-```yaml
-- name: Run clang-tidy
-  if: contains(matrix.compiler, 'llvm')
-  run: |
-    run-clang-tidy -p ./build -j $(nproc) \
-      -header-filter='(include|src)/' \
-      -warnings-as-errors='*'
-```
+**Root cause:** The `-p` flag in `CMAKE_CXX_CLANG_TIDY` options told CMake
+to have clang-tidy use `compile_commands.json` instead of passing the full
+compile command directly. This broke include resolution for Conan packages
+whose headers live in external `-isystem` paths (`~/.conan2/p/...`). Without
+`-p`, CMake appends `-- <full compile command>` to clang-tidy, which includes
+all `-isystem` paths and works reliably with Conan.
 
 ## macOS + GCC excluded from CI
 
