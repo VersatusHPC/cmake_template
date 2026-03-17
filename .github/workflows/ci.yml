@@ -194,7 +194,9 @@ jobs:
         run: |
           # Conan doesn't recognize IntelLLVM natively; create a default
           # profile that treats ICX as Clang (which it is under the hood)
-          ICX_CLANG_VER=$(icx --version | head -1 | sed -n 's/.*clang version \([0-9]*\).*/\1/p')
+          ICX=/opt/intel/oneapi/compiler/latest/bin/icx
+          ICX_CLANG_VER=$($ICX --version | head -1 | sed -n 's/.*clang version \([0-9]*\).*/\1/p')
+          echo "Detected ICX Clang version: $ICX_CLANG_VER"
           conan profile detect --force
           sed -i "s/compiler=intel-cc/compiler=clang/" ~/.conan2/profiles/default
           sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
