@@ -213,6 +213,7 @@ jobs:
           conan install . --output-folder=build --build=missing -s build_type=RelWithDebInfo
 
       - name: Configure CMake
+        shell: bash
         run: |
           EXTRA_CMAKE_ARGS=""
           # For Intel, deps are pre-installed with conan install; skip the
