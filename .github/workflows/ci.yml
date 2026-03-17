@@ -195,19 +195,17 @@ jobs:
       - name: Configure Intel Conan profile
         if: ${{ matrix.compiler == 'intel' }}
         run: |
-          # Conan doesn't recognize IntelLLVM natively; create a default
-          # profile that treats ICX as Clang (which it is under the hood)
+          # The cmake-conan provider auto-detects the compiler from CC/CXX.
+          # It doesn't recognize IntelLLVM, so we temporarily set CC/CXX to
+          # clang/clang++ (which ICX is binary-compatible with) for profile
+          # detection, then restore them for the actual build.
           ICX=/opt/intel/oneapi/compiler/latest/bin/icx
-          echo "ICX version output:"
-          $ICX --version
           ICX_CLANG_VER=$($ICX -dM -E -x c /dev/null 2>/dev/null | grep __clang_major__ | awk '{print $3}')
-          echo "Detected underlying Clang major version: $ICX_CLANG_VER"
-          conan profile detect --force
-          echo "Conan detected profile:"
-          cat ~/.conan2/profiles/default
-          sed -i "s/compiler=intel-cc/compiler=clang/" ~/.conan2/profiles/default
+          echo "Detected ICX underlying Clang version: $ICX_CLANG_VER"
+          # Detect profile as if using system clang
+          CC=clang CXX=clang++ conan profile detect --force
+          # Override to the actual Clang version ICX is based on
           sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
-          echo "Modified profile:"
           cat ~/.conan2/profiles/default
 
       - name: Configure CMake
