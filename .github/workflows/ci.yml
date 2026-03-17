@@ -61,6 +61,12 @@ jobs:
           - os: macos-latest
             compiler: intel
 
+          # GCC on macOS has ABI incompatibilities with Conan packages
+          # (libstdc++ vs libc++ mismatch). Use the devcontainer for
+          # GCC builds; macOS CI validates Clang only.
+          - os: macos-latest
+            compiler: gcc-14
+
         include:
           # Add appropriate variables for gcov version required. This will intentionally break
           # if you try to use a compiler that does not have gcov set
