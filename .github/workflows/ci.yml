@@ -180,11 +180,16 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
           sudo apt-get update
           sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp cmake ninja-build ccache cppcheck gcovr
-          source /opt/intel/oneapi/setvars.sh
           echo "CC=icx" >> $GITHUB_ENV
           echo "CXX=icpx" >> $GITHUB_ENV
           echo "/opt/intel/oneapi/compiler/latest/bin" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          # Conan doesn't recognize IntelLLVM natively; create a default
+          # profile that treats ICX as Clang (which it is under the hood)
+          ICX_CLANG_VER=$(icx --version | grep -oP 'clang version \K\d+')
+          conan profile detect --force
+          sed -i "s/compiler=intel-cc/compiler=clang/" ~/.conan2/profiles/default
+          sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
 
       - name: Install Conan and Lizard
         run: pip install conan lizard
