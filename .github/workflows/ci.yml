@@ -189,21 +189,26 @@ jobs:
           echo "CC=icx" >> $GITHUB_ENV
           echo "CXX=icpx" >> $GITHUB_ENV
 
+      - name: Install Conan and Lizard
+        run: pip install conan lizard
+
       - name: Configure Intel Conan profile
         if: ${{ matrix.compiler == 'intel' }}
         run: |
           # Conan doesn't recognize IntelLLVM natively; create a default
           # profile that treats ICX as Clang (which it is under the hood)
           ICX=/opt/intel/oneapi/compiler/latest/bin/icx
-          ICX_CLANG_VER=$($ICX --version | head -1 | sed -n 's/.*clang version \([0-9]*\).*/\1/p')
-          echo "Detected ICX Clang version: $ICX_CLANG_VER"
+          echo "ICX version output:"
+          $ICX --version
+          ICX_CLANG_VER=$($ICX -dM -E -x c /dev/null 2>/dev/null | grep __clang_major__ | awk '{print $3}')
+          echo "Detected underlying Clang major version: $ICX_CLANG_VER"
           conan profile detect --force
+          echo "Conan detected profile:"
+          cat ~/.conan2/profiles/default
           sed -i "s/compiler=intel-cc/compiler=clang/" ~/.conan2/profiles/default
           sed -i "s/compiler.version=.*/compiler.version=$ICX_CLANG_VER/" ~/.conan2/profiles/default
+          echo "Modified profile:"
           cat ~/.conan2/profiles/default
-
-      - name: Install Conan and Lizard
-        run: pip install conan lizard
 
       - name: Configure CMake
         run: |
