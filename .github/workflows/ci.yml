@@ -193,21 +193,30 @@ jobs:
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
-      - name: Fix Conan profile for macOS GCC
+      - name: Pre-install Conan deps for macOS GCC
         if: ${{ runner.os == 'macOS' && contains(matrix.compiler, 'gcc') }}
         run: |
-          # GCC on macOS uses libstdc++, but Conan's default macOS profile
-          # detects Apple Clang and sets libc++. Override to libstdc++11 so
-          # Conan builds packages with the correct ABI for GCC.
+          # GCC on macOS uses libstdc++, but the cmake-conan provider
+          # auto-detects Apple Clang and builds packages with libc++.
+          # Pre-install deps with a GCC profile and skip the provider.
           conan profile detect --force
-          sed -i.bak "s/compiler=apple-clang/compiler=gcc/" ~/.conan2/profiles/default
           GCC_VER=$(echo "${{ matrix.compiler }}" | grep -o '[0-9]*')
-          sed -i.bak "s/compiler.version=.*/compiler.version=$GCC_VER/" ~/.conan2/profiles/default
-          sed -i.bak "s/compiler.libcxx=.*/compiler.libcxx=libstdc++11/" ~/.conan2/profiles/default
-          # Remove Apple Clang specific settings
-          sed -i.bak "/compiler.cppstd/d" ~/.conan2/profiles/default
-          echo "compiler.cppstd=23" >> ~/.conan2/profiles/default
+          cat > ~/.conan2/profiles/default << PROFILE
+          [settings]
+          arch=armv8
+          build_type=Release
+          compiler=gcc
+          compiler.cppstd=23
+          compiler.libcxx=libstdc++11
+          compiler.version=$GCC_VER
+          os=Macos
+          [conf]
+          tools.build:compiler_executables={"c": "gcc-$GCC_VER", "cpp": "g++-$GCC_VER"}
+          PROFILE
           cat ~/.conan2/profiles/default
+          conan install . --output-folder=build --build=missing -s build_type=Debug
+          conan install . --output-folder=build --build=missing -s build_type=Release
+          conan install . --output-folder=build --build=missing -s build_type=RelWithDebInfo
 
       - name: Configure Conan for Intel ICX
         if: ${{ matrix.compiler == 'intel' }}
@@ -237,6 +246,10 @@ jobs:
           # auto-provider (which doesn't support IntelLLVM) and point CMake
           # to the Conan generators directory
           if [[ "${{ matrix.compiler }}" == "intel" ]]; then
+            EXTRA_CMAKE_ARGS="-Dmyproject_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build"
+          fi
+          # macOS GCC: deps pre-installed with libstdc++11 profile
+          if [[ "${{ runner.os }}" == "macOS" && "${{ matrix.compiler }}" =~ gcc ]]; then
             EXTRA_CMAKE_ARGS="-Dmyproject_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build"
           fi
           cmake -S . -B ./build -G "${{matrix.generator}}" $EXTRA_CMAKE_ARGS -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{matrix.enable_ipo }} -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF -DGIT_SHA:STRING=${{ github.sha }}
