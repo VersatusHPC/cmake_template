@@ -20,7 +20,9 @@ jobs:
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 'latest'
+          # Pin to 3.1.x (emcc version 21) — Conan's settings.yml doesn't
+          # support emcc version 23+ yet
+          version: '3.1.74'
 
       - name: Install Ninja and Conan
         run: |
