@@ -209,7 +209,8 @@ struct Color {
 struct Bitmap : ftxui::Node {
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   Bitmap(std::size_t width, std::size_t height)
-      : width_(width), height_(height) {}
+      : width_(width)
+      , height_(height) {}
 
   Color& at(std::size_t cur_x, std::size_t cur_y) {
     return pixels.at((width_ * cur_y) + cur_x);
