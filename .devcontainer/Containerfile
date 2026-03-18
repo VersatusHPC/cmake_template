@@ -1,10 +1,16 @@
-# Red Hat Universal Base Image 10
-FROM registry.access.redhat.com/ubi10/ubi
+# Base image: UBI 10 for local dev (default), AlmaLinux 10 for CI
+# AlmaLinux is 1:1 RHEL-compatible and has free CRB/EPEL repos,
+# so CI builds work on GitHub Actions without a RHEL subscription.
+ARG BASE_IMAGE=registry.access.redhat.com/ubi10/ubi
+FROM ${BASE_IMAGE}
 
-# Enable required repositories
+# Enable CRB and EPEL (handles both UBI and AlmaLinux/Rocky Linux)
 RUN dnf install -y 'dnf-command(config-manager)' && \
-    dnf config-manager --enable ubi-10-codeready-builder-rpms && \
-    dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+    (dnf config-manager --enable ubi-10-codeready-builder-rpms 2>/dev/null || \
+     dnf config-manager --enable crb 2>/dev/null || \
+     true) && \
+    (dnf install -y epel-release 2>/dev/null || \
+     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm)
 
 # Core build tools
 RUN dnf install -y \
