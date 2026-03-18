@@ -21,7 +21,8 @@ RUN dnf install -y \
         clang clang-tools-extra clang-devel llvm-devel lld lldb
 
 # Static analysis and documentation
-RUN dnf install -y cppcheck doxygen graphviz
+# doxygen not available in UBI repos — only needed for 'docs' target, not CI
+RUN dnf install -y cppcheck graphviz
 
 # Bloaty McBloatface — binary size analyzer (build from source)
 # Uses bundled third-party deps (re2, protobuf, abseil) to avoid
