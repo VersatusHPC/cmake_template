@@ -117,7 +117,13 @@ jobs:
       - name: Enable GCC 15 toolset
         if: matrix.compiler == 'gcc-15'
         run: |
-          source /opt/rh/gcc-toolset-15/enable
+          if [ -f /opt/rh/gcc-toolset-15/enable ]; then
+            source /opt/rh/gcc-toolset-15/enable
+          else
+            # EL10 gcc-toolset-15-runtime may not ship the enable script
+            export PATH="/opt/rh/gcc-toolset-15/root/usr/bin:$PATH"
+            export LD_LIBRARY_PATH="/opt/rh/gcc-toolset-15/root/usr/lib64:${LD_LIBRARY_PATH:-}"
+          fi
           echo "PATH=$PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
           gcc --version
