@@ -48,7 +48,7 @@ jobs:
         compiler:
           - gcc-14
           - gcc-15
-          - clang-19
+          - clang
           - intel
         build_type:
           - Release
@@ -71,7 +71,7 @@ jobs:
             gcov_executable: gcov
             enable_ipo: Off
 
-          - compiler: clang-19
+          - compiler: clang
             cc: clang
             cxx: clang++
             gcov_executable: "llvm-cov gcov"
@@ -117,16 +117,7 @@ jobs:
       - name: Enable GCC 15 toolset
         if: matrix.compiler == 'gcc-15'
         run: |
-          if [ -f /opt/rh/gcc-toolset-15/enable ]; then
-            source /opt/rh/gcc-toolset-15/enable
-          elif [ -x /opt/rh/gcc-toolset-15/root/usr/bin/gcc ]; then
-            # enable script missing but toolset binaries exist (AlmaLinux 10)
-            export PATH="/opt/rh/gcc-toolset-15/root/usr/bin:$PATH"
-            export LD_LIBRARY_PATH="/opt/rh/gcc-toolset-15/root/usr/lib64:${LD_LIBRARY_PATH:-}"
-          else
-            echo "::error::GCC 15 toolset not found"
-            exit 1
-          fi
+          source /opt/rh/gcc-toolset-15/enable
           echo "PATH=$PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
           gcc --version

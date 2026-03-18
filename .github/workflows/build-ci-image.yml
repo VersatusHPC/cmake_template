@@ -13,7 +13,7 @@ on:
       - '.devcontainer/Containerfile.intel'
       - '.github/workflows/build-ci-image.yml'
   schedule:
-    # Weekly rebuild — picks up base image security updates
+    # Weekly rebuild — picks up UBI 10 base image security updates
     - cron: '0 6 * * 1'
   workflow_dispatch:
 
@@ -63,8 +63,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BASE_IMAGE=almalinux:10
 
   build-ci-intel-image:
     name: CI Intel image
