@@ -76,9 +76,16 @@ jobs:
       with:
         envFile: '.github/constants.env'
 
+    - name: Pre-install Conan deps
+      run: |
+        conan profile detect --force
+        sed -i "s/compiler.libcxx=.*/compiler.libcxx=libstdc++11/" ~/.conan2/profiles/default
+        sed -i "s/compiler.cppstd=.*/compiler.cppstd=23/" ~/.conan2/profiles/default
+        conan install . --output-folder=build --build=missing -s build_type=Debug
+
     - name: Configure CMake
       run: |
-        cmake -S . -B ./build -G "${{matrix.generator}}" -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF
+        cmake -S . -B ./build -G "${{matrix.generator}}" -D${{ env.PROJECT_NAME }}_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build -DCMAKE_BUILD_TYPE:STRING=${{matrix.build_type}} -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{matrix.packaging_maintainer_mode}} -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=OFF -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
