@@ -53,14 +53,15 @@ RUN python3 -m pip install --upgrade pip setuptools && \
 ENV CONAN_SYSREQUIRES_SUDO=0 \
     CONAN_SYSREQUIRES_MODE=enabled
 
-# include-what-you-use (build from source)
-ARG IWYU_BRANCH="clang_19"
+# include-what-you-use (build from source, auto-detect Clang version)
 ENV IWYU=/home/iwyu \
     IWYU_BUILD=/home/iwyu/build \
     IWYU_SRC=/home/iwyu/include-what-you-use
 
-RUN mkdir -p ${IWYU_BUILD} && \
-    git clone --branch ${IWYU_BRANCH} --depth 1 \
+RUN CLANG_MAJOR=$(clang --version | head -1 | grep -oE '[0-9]+' | head -1) && \
+    echo "Detected Clang ${CLANG_MAJOR}, using IWYU branch clang_${CLANG_MAJOR}" && \
+    mkdir -p ${IWYU_BUILD} && \
+    git clone --branch "clang_${CLANG_MAJOR}" --depth 1 \
         https://github.com/include-what-you-use/include-what-you-use.git \
         ${IWYU_SRC}
 
