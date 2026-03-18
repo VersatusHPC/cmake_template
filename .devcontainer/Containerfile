@@ -36,7 +36,7 @@ ARG BLOATY_VERSION="v1.1"
 RUN git clone --branch ${BLOATY_VERSION} --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/google/bloaty.git /tmp/bloaty && \
     cmake -S /tmp/bloaty -B /tmp/bloaty/build \
-        -DCMAKE_BUILD_TYPE=Release -G Ninja && \
+        -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -G Ninja && \
     cmake --build /tmp/bloaty/build -j && \
     cmake --install /tmp/bloaty/build && \
     rm -rf /tmp/bloaty
