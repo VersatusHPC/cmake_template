@@ -117,9 +117,22 @@ jobs:
       - name: Enable GCC 15 toolset
         if: matrix.compiler == 'gcc-15'
         run: |
-          source /opt/rh/gcc-toolset-15/enable
-          echo "PATH=$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          if [ -f /opt/rh/gcc-toolset-15/enable ]; then
+            source /opt/rh/gcc-toolset-15/enable
+            echo "PATH=$PATH" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          else
+            # AlmaLinux/Rocky may ship GCC 15 as system or at a different path
+            GCC15=$(command -v gcc-15 2>/dev/null || true)
+            if [ -n "$GCC15" ]; then
+              echo "CC=gcc-15" >> $GITHUB_ENV
+              echo "CXX=g++-15" >> $GITHUB_ENV
+            else
+              echo "::error::GCC 15 not found — neither toolset nor gcc-15 binary available"
+              exit 1
+            fi
+          fi
+          gcc --version || $CC --version
 
       - name: Set compiler environment
         run: |
@@ -153,7 +166,7 @@ jobs:
             -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{ matrix.packaging_maintainer_mode }} \
             -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} \
             -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=ON \
-            -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=ON \
+            -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=${{ contains(matrix.compiler, 'clang') }} \
             -DGIT_SHA:STRING=${{ github.sha }}
 
       - name: Build
