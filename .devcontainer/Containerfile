@@ -1,9 +1,9 @@
 # Red Hat Universal Base Image 10
 FROM registry.access.redhat.com/ubi10/ubi
 
-# Enable required repositories
+# Enable CRB and EPEL (both freely available on UBI 10, no subscription required)
 RUN dnf install -y 'dnf-command(config-manager)' && \
-    dnf config-manager --enable ubi-10-codeready-builder-rpms && \
+    dnf config-manager --enable codeready-builder-for-ubi-10-$(arch)-rpms && \
     dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
 
 # Core build tools
@@ -16,33 +16,47 @@ RUN dnf install -y \
 RUN dnf install -y gcc gcc-c++ gdb \
         gcc-toolset-15-gcc gcc-toolset-15-gcc-c++ gcc-toolset-15-binutils
 
-# LLVM / Clang
+# LLVM / Clang (llvm-toolset meta-package not available on UBI)
 RUN dnf install -y \
-        llvm-toolset clang clang-tools-extra clang-devel llvm-devel lld lldb
+        clang clang-tools-extra clang-devel llvm-devel lld lldb
 
 # Static analysis and documentation
-RUN dnf install -y cppcheck doxygen graphviz
+# doxygen not available in UBI repos — only needed for 'docs' target, not CI
+RUN dnf install -y cppcheck graphviz
+
+# Bloaty McBloatface — binary size analyzer (build from source)
+# Uses bundled third-party deps (re2, protobuf, abseil) to avoid
+# version incompatibilities with system packages.
+ARG BLOATY_VERSION="v1.1"
+RUN git clone --branch ${BLOATY_VERSION} --depth 1 --recurse-submodules --shallow-submodules \
+        https://github.com/google/bloaty.git /tmp/bloaty && \
+    cmake -S /tmp/bloaty -B /tmp/bloaty/build \
+        -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -G Ninja && \
+    cmake --build /tmp/bloaty/build -j && \
+    cmake --install /tmp/bloaty/build && \
+    rm -rf /tmp/bloaty
 
 # Editors
 RUN dnf install -y neovim nano
 
 # Python packages
 RUN python3 -m pip install --upgrade pip setuptools && \
-    python3 -m pip install conan && \
+    python3 -m pip install conan gcovr lizard && \
     conan --version
 
 # Conan configuration for containers
 ENV CONAN_SYSREQUIRES_SUDO=0 \
     CONAN_SYSREQUIRES_MODE=enabled
 
-# include-what-you-use (build from source)
-ARG IWYU_BRANCH="clang_19"
+# include-what-you-use (build from source, auto-detect Clang version)
 ENV IWYU=/home/iwyu \
     IWYU_BUILD=/home/iwyu/build \
     IWYU_SRC=/home/iwyu/include-what-you-use
 
-RUN mkdir -p ${IWYU_BUILD} && \
-    git clone --branch ${IWYU_BRANCH} --depth 1 \
+RUN CLANG_MAJOR=$(clang --version | head -1 | grep -oE '[0-9]+' | head -1) && \
+    echo "Detected Clang ${CLANG_MAJOR}, using IWYU branch clang_${CLANG_MAJOR}" && \
+    mkdir -p ${IWYU_BUILD} && \
+    git clone --branch "clang_${CLANG_MAJOR}" --depth 1 \
         https://github.com/include-what-you-use/include-what-you-use.git \
         ${IWYU_SRC}
 
