@@ -35,10 +35,12 @@ jobs:
 
       - name: Configure Conan for Emscripten threading
         run: |
-          # The cmake-conan provider auto-detects Emscripten but builds
-          # packages without threading flags. FTXUI requires pthreads.
-          # Configure the default Conan profile to pass -pthread so all
-          # packages (especially spdlog) are built with atomics support.
+          # FTXUI requires pthreads for its WASM implementation.
+          # All Conan packages must be built with -pthread so they
+          # include atomics/bulk-memory support. Without this, spdlog
+          # fails at link time with:
+          #   wasm-ld: error: --shared-memory is disallowed because
+          #   it was not compiled with 'atomics' or 'bulk-memory'
           conan profile detect --force
           echo "" >> ~/.conan2/profiles/default
           echo "[conf]" >> ~/.conan2/profiles/default
