@@ -16,9 +16,9 @@ RUN dnf install -y \
 RUN dnf install -y gcc gcc-c++ gdb \
         gcc-toolset-15-gcc gcc-toolset-15-gcc-c++ gcc-toolset-15-binutils
 
-# LLVM / Clang
+# LLVM / Clang (llvm-toolset meta-package not available on UBI)
 RUN dnf install -y \
-        llvm-toolset clang clang-tools-extra clang-devel llvm-devel lld lldb
+        clang clang-tools-extra clang-devel llvm-devel lld lldb
 
 # Static analysis and documentation
 RUN dnf install -y cppcheck doxygen graphviz
