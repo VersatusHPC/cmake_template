@@ -30,12 +30,13 @@ RUN dnf install -y \
 RUN dnf install -y cppcheck doxygen graphviz
 
 # Bloaty McBloatface — binary size analyzer (build from source)
+# Uses bundled third-party deps (re2, protobuf, abseil) to avoid
+# version incompatibilities with system packages.
 ARG BLOATY_VERSION="v1.1"
-RUN dnf install -y re2-devel protobuf-devel capstone-devel && \
-    git clone --branch ${BLOATY_VERSION} --depth 1 \
+RUN git clone --branch ${BLOATY_VERSION} --depth 1 --recurse-submodules --shallow-submodules \
         https://github.com/google/bloaty.git /tmp/bloaty && \
     cmake -S /tmp/bloaty -B /tmp/bloaty/build \
-        -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -G Ninja && \
+        -DCMAKE_BUILD_TYPE=Release -G Ninja && \
     cmake --build /tmp/bloaty/build -j && \
     cmake --install /tmp/bloaty/build && \
     rm -rf /tmp/bloaty
