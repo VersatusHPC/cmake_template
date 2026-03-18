@@ -136,6 +136,21 @@ jobs:
           echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
           echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
 
+      - name: Pre-install Conan deps for GCC
+        if: ${{ contains(matrix.compiler, 'gcc') }}
+        run: |
+          # The cmake-conan provider may not set compiler.libcxx=libstdc++11,
+          # causing ABI mismatch (old std::string vs std::__cxx11::basic_string).
+          # Pre-install deps with an explicit GCC profile.
+          GCC_VER=$(${CC:-gcc} -dumpversion | cut -d. -f1)
+          conan profile detect --force
+          sed -i "s/compiler.libcxx=.*/compiler.libcxx=libstdc++11/" ~/.conan2/profiles/default
+          sed -i "s/compiler.cppstd=.*/compiler.cppstd=23/" ~/.conan2/profiles/default
+          cat ~/.conan2/profiles/default
+          conan install . --output-folder=build --build=missing -s build_type=Debug
+          conan install . --output-folder=build --build=missing -s build_type=Release
+          conan install . --output-folder=build --build=missing -s build_type=RelWithDebInfo
+
       - name: Configure Conan for Intel ICX
         if: matrix.compiler == 'intel'
         run: |
@@ -153,7 +168,7 @@ jobs:
         run: |
           GENERATOR="${{ matrix.generator || 'Ninja Multi-Config' }}"
           EXTRA_CMAKE_ARGS=""
-          if [[ "${{ matrix.compiler }}" == "intel" ]]; then
+          if [[ "${{ matrix.compiler }}" == "intel" || "${{ matrix.compiler }}" =~ gcc ]]; then
             EXTRA_CMAKE_ARGS="-D${{ env.PROJECT_NAME }}_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build"
           fi
           cmake -S . -B ./build -G "$GENERATOR" \
