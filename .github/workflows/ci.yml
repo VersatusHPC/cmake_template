@@ -63,13 +63,13 @@ jobs:
             cc: gcc
             cxx: g++
             gcov_executable: gcov
-            enable_ipo: On
+            enable_ipo: Off
 
           - compiler: gcc-15
             cc: gcc
             cxx: g++
             gcov_executable: gcov
-            enable_ipo: On
+            enable_ipo: Off
 
           - compiler: clang-19
             cc: clang
@@ -119,20 +119,17 @@ jobs:
         run: |
           if [ -f /opt/rh/gcc-toolset-15/enable ]; then
             source /opt/rh/gcc-toolset-15/enable
-            echo "PATH=$PATH" >> $GITHUB_ENV
-            echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          elif [ -x /opt/rh/gcc-toolset-15/root/usr/bin/gcc ]; then
+            # enable script missing but toolset binaries exist (AlmaLinux 10)
+            export PATH="/opt/rh/gcc-toolset-15/root/usr/bin:$PATH"
+            export LD_LIBRARY_PATH="/opt/rh/gcc-toolset-15/root/usr/lib64:${LD_LIBRARY_PATH:-}"
           else
-            # AlmaLinux/Rocky may ship GCC 15 as system or at a different path
-            GCC15=$(command -v gcc-15 2>/dev/null || true)
-            if [ -n "$GCC15" ]; then
-              echo "CC=gcc-15" >> $GITHUB_ENV
-              echo "CXX=g++-15" >> $GITHUB_ENV
-            else
-              echo "::error::GCC 15 not found — neither toolset nor gcc-15 binary available"
-              exit 1
-            fi
+            echo "::error::GCC 15 toolset not found"
+            exit 1
           fi
-          gcc --version || $CC --version
+          echo "PATH=$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+          gcc --version
 
       - name: Set compiler environment
         run: |
