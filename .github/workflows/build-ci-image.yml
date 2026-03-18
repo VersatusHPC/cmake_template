@@ -28,8 +28,16 @@ jobs:
   build-ci-image:
     name: CI image
     runs-on: ubuntu-latest
+    outputs:
+      ci-image: ${{ steps.image-name.outputs.ci }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Compute lowercase image name
+        id: image-name
+        run: |
+          REPO="${{ github.repository }}"
+          echo "ci=${{ env.REGISTRY }}/${REPO,,}/ci:latest" >> $GITHUB_OUTPUT
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -90,4 +98,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ github.repository }}/ci:latest
+            BASE_IMAGE=${{ needs.build-ci-image.outputs.ci-image }}
