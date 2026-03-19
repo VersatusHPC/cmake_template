@@ -28,6 +28,11 @@ jobs:
   build-ci-image:
     name: CI image
     runs-on: ubuntu-latest
+    # Disabled: derived repos use the template's pre-built images from
+    # ghcr.io/versatushpc/cmake_template/ci:latest. Re-enable this job
+    # (and update ci.yml / codeql-analysis.yml) if a project needs a
+    # custom CI image.
+    if: false
     outputs:
       ci-image: ${{ steps.image-name.outputs.ci }}
     steps:
@@ -67,6 +72,11 @@ jobs:
   build-ci-intel-image:
     name: CI Intel image
     runs-on: ubuntu-latest
+    # Disabled: derived repos use the template's pre-built images from
+    # ghcr.io/versatushpc/cmake_template/ci-intel:latest. Re-enable this job
+    # (and update ci.yml / codeql-analysis.yml) if a project needs a
+    # custom CI image.
+    if: false
     needs: build-ci-image
     steps:
       - uses: actions/checkout@v6

@@ -28,10 +28,18 @@ jobs:
     steps:
       - id: images
         run: |
-          REPO="${{ github.repository }}"
-          REPO_LC="${REPO,,}"
-          echo "ci=ghcr.io/${REPO_LC}/ci:latest" >> $GITHUB_OUTPUT
-          echo "ci-intel=ghcr.io/${REPO_LC}/ci-intel:latest" >> $GITHUB_OUTPUT
+          # Use the template repo's pre-built CI images so that repos derived
+          # from the template work on their very first push — before their own
+          # build-ci-image workflow has had a chance to run.
+          # If a project later needs a custom CI image, uncomment the lines
+          # below and re-enable the per-repo build-ci-image workflow.
+          #
+          # REPO="${{ github.repository }}"
+          # REPO_LC="${REPO,,}"
+          # echo "ci=ghcr.io/${REPO_LC}/ci:latest" >> $GITHUB_OUTPUT
+          # echo "ci-intel=ghcr.io/${REPO_LC}/ci-intel:latest" >> $GITHUB_OUTPUT
+          echo "ci=ghcr.io/versatushpc/cmake_template/ci:latest" >> $GITHUB_OUTPUT
+          echo "ci-intel=ghcr.io/versatushpc/cmake_template/ci-intel:latest" >> $GITHUB_OUTPUT
 
   # ---------------------------------------------------------------------------
   # Linux — UBI 10 container, all tools pre-installed
