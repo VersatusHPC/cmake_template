@@ -10,15 +10,15 @@
 # For full documentation, see docs/CI.md
 
 linux:
-  gcc-14: true       # System GCC (UBI 10)
-  gcc-15: true       # GCC Toolset 15 (gcc-toolset-15)
-  clang: true        # System Clang (UBI 10, version depends on minor release)
-  intel: true        # Intel ICX/ICPX (oneAPI, uses separate container image)
+  gcc-14: false       # System GCC (UBI 10)
+  gcc-15: false       # GCC Toolset 15 (gcc-toolset-15)
+  clang: false        # System Clang (UBI 10, version depends on minor release)
+  intel: false        # Intel ICX/ICPX (oneAPI, uses separate container image)
 
 macos:
-  llvm: true         # LLVM/Clang via setup-cpp (version set by CLANG_TIDY_VERSION)
-  gcc-14: true       # Homebrew GCC 14 (coverage skipped, issue #5)
+  llvm: false         # LLVM/Clang via setup-cpp (version set by CLANG_TIDY_VERSION)
+  gcc-14: false       # Homebrew GCC 14 (coverage skipped, issue #5)
 
 windows:
-  msvc: true         # Visual Studio 17 2022
-  llvm: true         # Clang-cl via LLVM (version set by CLANG_TIDY_VERSION)
+  msvc: false         # Visual Studio 17 2022
+  llvm: false         # Clang-cl via LLVM (version set by CLANG_TIDY_VERSION)

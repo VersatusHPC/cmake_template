@@ -56,8 +56,16 @@ jobs:
       - id: config
         env:
           CLANG_TIDY_VERSION: ${{ env.CLANG_TIDY_VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          CONFIG=$(yq -o=json . .github/ci-config.yml)
+          # On the template repo itself, enable all compilers regardless of
+          # ci-config.yml (which ships with all false for derived repos).
+          IS_TEMPLATE=$(gh api repos/${{ github.repository }} --jq '.is_template // false' 2>/dev/null || echo "false")
+          if [ "$IS_TEMPLATE" = "true" ]; then
+            CONFIG='{"linux":{"gcc-14":true,"gcc-15":true,"clang":true,"intel":true},"macos":{"llvm":true,"gcc-14":true},"windows":{"msvc":true,"llvm":true}}'
+          else
+            CONFIG=$(yq -o=json . .github/ci-config.yml)
+          fi
 
           # --- Linux ---
           LINUX=$(echo "$CONFIG" | jq -c '[.linux | to_entries[] | select(.value == true) | .key]')

@@ -4,20 +4,24 @@ The CI pipeline is configurable via `.github/ci-config.yml`. Users can
 toggle which compilers are tested on each platform without editing
 workflow files.
 
+All compilers are **disabled by default** in derived repos. Enable only
+the compilers your project needs. The template repo itself
+auto-enables all compilers via `is_template` detection.
+
 ## Configuration file
 
-Edit `.github/ci-config.yml` to enable or disable compilers:
+Edit `.github/ci-config.yml` to enable compilers for your project:
 
 ```yaml
 linux:
   gcc-14: true       # System GCC (UBI 10)
-  gcc-15: true       # GCC Toolset 15
+  gcc-15: false      # GCC Toolset 15
   clang: true        # System Clang (version depends on UBI minor release)
-  intel: true        # Intel ICX/ICPX (oneAPI)
+  intel: false       # Intel ICX/ICPX (oneAPI)
 
 macos:
   llvm: true         # LLVM/Clang via setup-cpp
-  gcc-14: true       # Homebrew GCC 14
+  gcc-14: false      # Homebrew GCC 14
 
 windows:
   msvc: true         # Visual Studio 17 2022
