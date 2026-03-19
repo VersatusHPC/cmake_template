@@ -113,6 +113,13 @@ jobs:
           mv include/myproject include/${{ env.NEW_SAFE_PROJECT }}
           cp ${{ env.TEMPLATES_PATH }}/README.md README.md
 
+      - name: Disable all CI compilers for derived repo
+        if: fromJson(steps.get_repo_meta.outputs.data).is_template == false
+        run: |
+          # Derived repos should start with all compilers disabled.
+          # Users enable only the compilers they need in .github/ci-config.yml
+          sed -i 's/: true/: false/g' .github/ci-config.yml
+
       - name: Print diff after replacement
         run: |
           # Exclude the README as that is checked separately!
