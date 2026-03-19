@@ -1,0 +1,24 @@
+# CI compiler matrix configuration
+#
+# Toggle which compilers are tested in CI for each platform.
+# Set to 'true' to enable, 'false' to disable.
+# Disabling all compilers on a platform skips that platform entirely.
+#
+# Linux compilers run inside UBI 10 container images.
+# macOS and Windows use bare runners with aminya/setup-cpp.
+#
+# For full documentation, see docs/CI.md
+
+linux:
+  gcc-14: true       # System GCC (UBI 10)
+  gcc-15: true       # GCC Toolset 15 (gcc-toolset-15)
+  clang: true        # System Clang (UBI 10, version depends on minor release)
+  intel: true        # Intel ICX/ICPX (oneAPI, uses separate container image)
+
+macos:
+  llvm: true         # LLVM/Clang via setup-cpp (version set by CLANG_TIDY_VERSION)
+  gcc-14: true       # Homebrew GCC 14 (coverage skipped, issue #5)
+
+windows:
+  msvc: true         # Visual Studio 17 2022
+  llvm: true         # Clang-cl via LLVM (version set by CLANG_TIDY_VERSION)

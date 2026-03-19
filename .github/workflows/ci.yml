@@ -21,7 +21,7 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Compute lowercase container image names (GHCR requires lowercase)
+  # Read CI config and compute matrix / container image names
   # ---------------------------------------------------------------------------
   setup:
     name: Setup
@@ -29,7 +29,15 @@ jobs:
     outputs:
       ci-image: ${{ steps.images.outputs.ci }}
       ci-intel-image: ${{ steps.images.outputs.ci-intel }}
+      linux-compilers: ${{ steps.config.outputs.linux-compilers }}
+      linux-enabled: ${{ steps.config.outputs.linux-enabled }}
+      macos-compilers: ${{ steps.config.outputs.macos-compilers }}
+      macos-enabled: ${{ steps.config.outputs.macos-enabled }}
+      windows-matrix: ${{ steps.config.outputs.windows-matrix }}
+      windows-enabled: ${{ steps.config.outputs.windows-enabled }}
     steps:
+      - uses: actions/checkout@v6
+
       - id: images
         run: |
           # Use the template repo's pre-built CI images so that repos derived
@@ -45,11 +53,72 @@ jobs:
           echo "ci=ghcr.io/versatushpc/cmake_template/ci:latest" >> $GITHUB_OUTPUT
           echo "ci-intel=ghcr.io/versatushpc/cmake_template/ci-intel:latest" >> $GITHUB_OUTPUT
 
+      - id: config
+        env:
+          CLANG_TIDY_VERSION: ${{ env.CLANG_TIDY_VERSION }}
+        run: |
+          CONFIG=$(yq -o=json . .github/ci-config.yml)
+
+          # --- Linux ---
+          LINUX=$(echo "$CONFIG" | jq -c '[.linux | to_entries[] | select(.value == true) | .key]')
+          if [ "$LINUX" = "[]" ]; then
+            echo "linux-enabled=false" >> $GITHUB_OUTPUT
+            echo 'linux-compilers=["__skip__"]' >> $GITHUB_OUTPUT
+          else
+            echo "linux-enabled=true" >> $GITHUB_OUTPUT
+            echo "linux-compilers=$LINUX" >> $GITHUB_OUTPUT
+          fi
+
+          # --- macOS (map 'llvm' to 'llvm-<version>' for setup-cpp) ---
+          MACOS=$(echo "$CONFIG" | jq -c --arg v "$CLANG_TIDY_VERSION" \
+            '[.macos | to_entries[] | select(.value == true) | .key |
+              if . == "llvm" then "llvm-" + $v else . end]')
+          if [ "$MACOS" = "[]" ]; then
+            echo "macos-enabled=false" >> $GITHUB_OUTPUT
+            echo 'macos-compilers=["__skip__"]' >> $GITHUB_OUTPUT
+          else
+            echo "macos-enabled=true" >> $GITHUB_OUTPUT
+            echo "macos-compilers=$MACOS" >> $GITHUB_OUTPUT
+          fi
+
+          # --- Windows (generate full matrix as JSON include array) ---
+          LLVM_VER="llvm-${CLANG_TIDY_VERSION}"
+          WIN_MATRIX='[]'
+
+          MSVC_ENABLED=$(echo "$CONFIG" | jq '.windows.msvc // false')
+          LLVM_ENABLED=$(echo "$CONFIG" | jq '.windows.llvm // false')
+
+          if [ "$MSVC_ENABLED" = "true" ]; then
+            WIN_MATRIX=$(echo "$WIN_MATRIX" | jq '. +
+              [{"compiler":"msvc","generator":"Visual Studio 17 2022","build_type":"Debug","packaging_maintainer_mode":"ON","enable_ipo":"On"},
+               {"compiler":"msvc","generator":"Visual Studio 17 2022","build_type":"Release","packaging_maintainer_mode":"ON","enable_ipo":"On"},
+               {"compiler":"msvc","generator":"Visual Studio 17 2022","build_type":"Debug","packaging_maintainer_mode":"OFF","enable_ipo":"Off"},
+               {"compiler":"msvc","generator":"Visual Studio 17 2022","build_type":"Release","packaging_maintainer_mode":"OFF","enable_ipo":"Off","package_generator":"ZIP"},
+               {"compiler":"msvc","generator":"Visual Studio 17 2022","build_type":"Release","packaging_maintainer_mode":"ON","enable_ipo":"On","build_shared":"ON"}]')
+          fi
+
+          if [ "$LLVM_ENABLED" = "true" ]; then
+            WIN_MATRIX=$(echo "$WIN_MATRIX" | jq --arg c "$LLVM_VER" '. +
+              [{"compiler":$c,"generator":"Ninja Multi-Config","build_type":"Debug","packaging_maintainer_mode":"ON","enable_ipo":"Off"},
+               {"compiler":$c,"generator":"Ninja Multi-Config","build_type":"Release","packaging_maintainer_mode":"ON","enable_ipo":"Off"},
+               {"compiler":$c,"generator":"Ninja Multi-Config","build_type":"Debug","packaging_maintainer_mode":"OFF","enable_ipo":"Off"},
+               {"compiler":$c,"generator":"Ninja Multi-Config","build_type":"Release","packaging_maintainer_mode":"OFF","enable_ipo":"Off"}]')
+          fi
+
+          if [ "$WIN_MATRIX" = "[]" ]; then
+            echo "windows-enabled=false" >> $GITHUB_OUTPUT
+            echo 'windows-matrix=[{"compiler":"__skip__"}]' >> $GITHUB_OUTPUT
+          else
+            echo "windows-enabled=true" >> $GITHUB_OUTPUT
+            echo "windows-matrix=$(echo "$WIN_MATRIX" | jq -c .)" >> $GITHUB_OUTPUT
+          fi
+
   # ---------------------------------------------------------------------------
   # Linux — UBI 10 container, all tools pre-installed
   # ---------------------------------------------------------------------------
   Linux:
-    name: Linux ${{ matrix.compiler }} ${{ matrix.build_type }} ${{ matrix.packaging_maintainer_mode == 'ON' && '(maintainer)' || '' }} ${{ matrix.generator == 'Unix Makefiles' && '(Make)' || '' }}
+    name: Linux ${{ matrix.compiler }} ${{ matrix.build_type }} ${{ matrix.packaging_maintainer_mode == 'ON' && '(maintainer)' || '' }}
+    if: needs.setup.outputs.linux-enabled == 'true'
     needs: setup
     runs-on: ubuntu-latest
     container:
@@ -57,58 +126,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        compiler:
-          - gcc-14
-          - gcc-15
-          - clang
-          - intel
+        compiler: ${{ fromJSON(needs.setup.outputs.linux-compilers) }}
         build_type:
           - Release
           - Debug
         packaging_maintainer_mode:
           - ON
           - OFF
-
-        include:
-          # Per-compiler settings
-          - compiler: gcc-14
-            cc: gcc
-            cxx: g++
-            gcov_executable: gcov
-            enable_ipo: Off
-
-          - compiler: gcc-15
-            cc: gcc
-            cxx: g++
-            gcov_executable: gcov
-            enable_ipo: Off
-
-          - compiler: clang
-            cc: clang
-            cxx: clang++
-            gcov_executable: "llvm-cov gcov"
-            enable_ipo: Off
-
-          - compiler: intel
-            cc: icx
-            cxx: icpx
-            gcov_executable: "llvm-cov gcov"
-            enable_ipo: Off
-
-          # Release packaging
-          - build_type: Release
-            packaging_maintainer_mode: ON
-            package_generator: TBZ2
-
-          # Non-multiconfig build (verifies Unix Makefiles still work)
-          - compiler: gcc-14
-            cc: gcc
-            cxx: g++
-            generator: "Unix Makefiles"
-            build_type: Debug
-            gcov_executable: gcov
-            packaging_maintainer_mode: ON
-            enable_ipo: Off
 
     steps:
       - uses: actions/checkout@v6
@@ -119,7 +143,7 @@ jobs:
           compiler: ${{ matrix.compiler }}
           build_type: ${{ matrix.build_type }}
           packaging_maintainer_mode: ${{ matrix.packaging_maintainer_mode }}
-          generator: ${{ matrix.generator || 'Ninja Multi-Config' }}
+          generator: "Ninja Multi-Config"
 
       - name: Project Name
         uses: cardinalby/export-env-action@v2
@@ -142,8 +166,30 @@ jobs:
 
       - name: Set compiler environment
         run: |
-          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
-          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+          case "${{ matrix.compiler }}" in
+            gcc-14|gcc-15)
+              echo "CC=gcc"              >> $GITHUB_ENV
+              echo "CXX=g++"             >> $GITHUB_ENV
+              echo "GCOV_EXECUTABLE=gcov" >> $GITHUB_ENV
+              echo "ENABLE_IPO=Off"      >> $GITHUB_ENV
+              ;;
+            clang)
+              echo "CC=clang"                     >> $GITHUB_ENV
+              echo "CXX=clang++"                  >> $GITHUB_ENV
+              echo "GCOV_EXECUTABLE=llvm-cov gcov" >> $GITHUB_ENV
+              echo "ENABLE_IPO=Off"               >> $GITHUB_ENV
+              ;;
+            intel)
+              echo "CC=icx"                       >> $GITHUB_ENV
+              echo "CXX=icpx"                     >> $GITHUB_ENV
+              echo "GCOV_EXECUTABLE=llvm-cov gcov" >> $GITHUB_ENV
+              echo "ENABLE_IPO=Off"               >> $GITHUB_ENV
+              ;;
+          esac
+          # Package generator
+          if [[ "${{ matrix.build_type }}" == "Release" && "${{ matrix.packaging_maintainer_mode }}" == "ON" ]]; then
+            echo "PACKAGE_GENERATOR=TBZ2" >> $GITHUB_ENV
+          fi
 
       - name: Pre-install Conan deps for GCC
         if: ${{ contains(matrix.compiler, 'gcc') }}
@@ -175,14 +221,13 @@ jobs:
 
       - name: Configure CMake
         run: |
-          GENERATOR="${{ matrix.generator || 'Ninja Multi-Config' }}"
           EXTRA_CMAKE_ARGS=""
           if [[ "${{ matrix.compiler }}" == "intel" || "${{ matrix.compiler }}" =~ gcc ]]; then
             EXTRA_CMAKE_ARGS="-D${{ env.PROJECT_NAME }}_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build"
           fi
-          cmake -S . -B ./build -G "$GENERATOR" \
+          cmake -S . -B ./build -G "Ninja Multi-Config" \
             $EXTRA_CMAKE_ARGS \
-            -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{ matrix.enable_ipo }} \
+            -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{ env.ENABLE_IPO }} \
             -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }} \
             -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{ matrix.packaging_maintainer_mode }} \
             -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} \
@@ -197,17 +242,17 @@ jobs:
         working-directory: ./build
         run: |
           ctest -C ${{ matrix.build_type }}
-          gcovr -j $(nproc) --root ../ --print-summary --xml-pretty --xml coverage.xml . --gcov-executable '${{ matrix.gcov_executable }}'
+          gcovr -j $(nproc) --root ../ --print-summary --xml-pretty --xml coverage.xml . --gcov-executable '${{ env.GCOV_EXECUTABLE }}'
 
       - name: CPack
-        if: matrix.package_generator != ''
+        if: env.PACKAGE_GENERATOR != ''
         working-directory: ./build
         run: |
-          cpack -C ${{ matrix.build_type }} -G ${{ matrix.package_generator }}
+          cpack -C ${{ matrix.build_type }} -G ${{ env.PACKAGE_GENERATOR }}
 
       - name: Publish Tagged Release
         uses: softprops/action-gh-release@v2
-        if: ${{ startsWith(github.ref, 'refs/tags/') && matrix.package_generator != '' }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') && env.PACKAGE_GENERATOR != '' }}
         with:
           files: |
             build/*-*${{ matrix.build_type }}*-*.*
@@ -222,37 +267,75 @@ jobs:
           files: ./build/coverage.xml
 
   # ---------------------------------------------------------------------------
+  # Linux — Unix Makefiles build (verifies non-multiconfig generators)
+  # ---------------------------------------------------------------------------
+  Linux-Make:
+    name: Linux gcc-14 Debug (Make)
+    if: needs.setup.outputs.linux-enabled == 'true' && contains(fromJSON(needs.setup.outputs.linux-compilers), 'gcc-14')
+    needs: setup
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.setup.outputs.ci-image }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Cache
+        uses: ./.github/actions/setup_cache
+        with:
+          compiler: gcc-14
+          build_type: Debug
+          packaging_maintainer_mode: ON
+          generator: "Unix Makefiles"
+
+      - name: Project Name
+        uses: cardinalby/export-env-action@v2
+        with:
+          envFile: '.github/constants.env'
+
+      - name: Pre-install Conan deps
+        run: |
+          conan profile detect --force
+          sed -i "s/compiler.libcxx=.*/compiler.libcxx=libstdc++11/" ~/.conan2/profiles/default
+          sed -i "s/compiler.cppstd=.*/compiler.cppstd=23/" ~/.conan2/profiles/default
+          conan install . --output-folder=build --build=missing -s build_type=Debug
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B ./build -G "Unix Makefiles" \
+            -D${{ env.PROJECT_NAME }}_SKIP_CONAN_PROVIDER=ON -DCMAKE_PREFIX_PATH=$PWD/build \
+            -D${{ env.PROJECT_NAME }}_ENABLE_IPO=Off \
+            -DCMAKE_BUILD_TYPE:STRING=Debug \
+            -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=ON \
+            -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=ON \
+            -D${{ env.PROJECT_NAME }}_ENABLE_BLOATY:BOOL=ON \
+            -D${{ env.PROJECT_NAME }}_ENABLE_INCLUDE_WHAT_YOU_USE:BOOL=OFF \
+            -DGIT_SHA:STRING=${{ github.sha }}
+
+      - name: Build
+        run: cmake --build ./build --config Debug
+
+      - name: Test
+        working-directory: ./build
+        run: ctest -C Debug
+
+  # ---------------------------------------------------------------------------
   # macOS — bare runner with setup-cpp
   # ---------------------------------------------------------------------------
   macOS:
     name: macOS ${{ matrix.compiler }} ${{ matrix.build_type }} ${{ matrix.packaging_maintainer_mode == 'ON' && '(maintainer)' || '' }}
+    if: needs.setup.outputs.macos-enabled == 'true'
+    needs: setup
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        compiler:
-          - llvm-19.1.1
-          - gcc-14
+        compiler: ${{ fromJSON(needs.setup.outputs.macos-compilers) }}
         build_type:
           - Release
           - Debug
         packaging_maintainer_mode:
           - ON
           - OFF
-
-        include:
-          - compiler: llvm-19.1.1
-            gcov_executable: "llvm-cov gcov"
-            enable_ipo: Off
-
-          - compiler: gcc-14
-            gcov_executable: gcov-14
-            enable_ipo: Off
-
-          # Release packaging
-          - build_type: Release
-            packaging_maintainer_mode: ON
-            package_generator: TBZ2
 
     steps:
       - name: Check for llvm version mismatches
@@ -292,6 +375,24 @@ jobs:
       - name: Install Conan and Lizard
         run: pip install conan lizard
 
+      - name: Set compiler environment
+        run: |
+          case "${{ matrix.compiler }}" in
+            llvm*)
+              echo "GCOV_EXECUTABLE=llvm-cov gcov" >> $GITHUB_ENV
+              echo "ENABLE_IPO=Off" >> $GITHUB_ENV
+              ;;
+            gcc-*)
+              GCC_VER=$(echo "${{ matrix.compiler }}" | grep -o '[0-9]*')
+              echo "GCOV_EXECUTABLE=gcov-${GCC_VER}" >> $GITHUB_ENV
+              echo "ENABLE_IPO=Off" >> $GITHUB_ENV
+              ;;
+          esac
+          # Package generator
+          if [[ "${{ matrix.build_type }}" == "Release" && "${{ matrix.packaging_maintainer_mode }}" == "ON" ]]; then
+            echo "PACKAGE_GENERATOR=TBZ2" >> $GITHUB_ENV
+          fi
+
       - name: Pre-install Conan deps for macOS GCC
         if: ${{ contains(matrix.compiler, 'gcc') }}
         run: |
@@ -322,7 +423,7 @@ jobs:
           fi
           cmake -S . -B ./build -G "Ninja Multi-Config" \
             $EXTRA_CMAKE_ARGS \
-            -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{ matrix.enable_ipo }} \
+            -D${{ env.PROJECT_NAME }}_ENABLE_IPO=${{ env.ENABLE_IPO }} \
             -DCMAKE_BUILD_TYPE:STRING=${{ matrix.build_type }} \
             -D${{ env.PROJECT_NAME }}_PACKAGING_MAINTAINER_MODE:BOOL=${{ matrix.packaging_maintainer_mode }} \
             -D${{ env.PROJECT_NAME }}_ENABLE_COVERAGE:BOOL=${{ matrix.build_type == 'Debug' }} \
@@ -339,18 +440,18 @@ jobs:
           ctest -C ${{ matrix.build_type }}
           # macOS GCC coverage broken — libgcov link failure (issue #5)
           if [[ ! "${{ matrix.compiler }}" =~ gcc ]]; then
-            gcovr -j $(sysctl -n hw.ncpu) --root ../ --print-summary --xml-pretty --xml coverage.xml . --gcov-executable '${{ matrix.gcov_executable }}'
+            gcovr -j $(sysctl -n hw.ncpu) --root ../ --print-summary --xml-pretty --xml coverage.xml . --gcov-executable '${{ env.GCOV_EXECUTABLE }}'
           fi
 
       - name: CPack
-        if: matrix.package_generator != ''
+        if: env.PACKAGE_GENERATOR != ''
         working-directory: ./build
         run: |
-          cpack -C ${{ matrix.build_type }} -G ${{ matrix.package_generator }}
+          cpack -C ${{ matrix.build_type }} -G ${{ env.PACKAGE_GENERATOR }}
 
       - name: Publish Tagged Release
         uses: softprops/action-gh-release@v2
-        if: ${{ startsWith(github.ref, 'refs/tags/') && matrix.package_generator != '' }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') && env.PACKAGE_GENERATOR != '' }}
         with:
           files: |
             build/*-*${{ matrix.build_type }}*-*.*
@@ -370,66 +471,13 @@ jobs:
   # ---------------------------------------------------------------------------
   Windows:
     name: Windows ${{ matrix.compiler }} ${{ matrix.build_type }} ${{ matrix.packaging_maintainer_mode == 'ON' && '(maintainer)' || '' }}
+    if: needs.setup.outputs.windows-enabled == 'true'
+    needs: setup
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # MSVC builds
-          - compiler: msvc
-            generator: "Visual Studio 17 2022"
-            build_type: Debug
-            packaging_maintainer_mode: ON
-            enable_ipo: On
-
-          - compiler: msvc
-            generator: "Visual Studio 17 2022"
-            build_type: Release
-            packaging_maintainer_mode: ON
-            enable_ipo: On
-
-          - compiler: msvc
-            generator: "Visual Studio 17 2022"
-            build_type: Debug
-            packaging_maintainer_mode: OFF
-
-          - compiler: msvc
-            generator: "Visual Studio 17 2022"
-            build_type: Release
-            packaging_maintainer_mode: OFF
-            package_generator: ZIP
-
-          - compiler: msvc
-            generator: "Visual Studio 17 2022"
-            build_type: Release
-            packaging_maintainer_mode: ON
-            enable_ipo: On
-            build_shared: ON
-
-          # Clang builds (clang-cl via LLVM)
-          - compiler: llvm-19.1.1
-            generator: "Ninja Multi-Config"
-            build_type: Debug
-            packaging_maintainer_mode: ON
-            enable_ipo: Off
-
-          - compiler: llvm-19.1.1
-            generator: "Ninja Multi-Config"
-            build_type: Release
-            packaging_maintainer_mode: ON
-            enable_ipo: Off
-
-          - compiler: llvm-19.1.1
-            generator: "Ninja Multi-Config"
-            build_type: Debug
-            packaging_maintainer_mode: OFF
-            enable_ipo: Off
-
-          - compiler: llvm-19.1.1
-            generator: "Ninja Multi-Config"
-            build_type: Release
-            packaging_maintainer_mode: OFF
-            enable_ipo: Off
+        include: ${{ fromJSON(needs.setup.outputs.windows-matrix) }}
 
     steps:
       - name: Check for llvm version mismatches
